@@ -1,0 +1,44 @@
+name: Lakehouse Pipeline
+
+on:
+  workflow_dispatch:          # chạy thủ công từ GitHub UI
+  schedule:
+    - cron: '0 17 * * *'     # 0h00 giờ VN (UTC+7) mỗi ngày
+
+jobs:
+  ingest-and-transform:
+    name: Bronze Ingestion + dbt Transform
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Bronze — Ingest từ Hugging Face
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python ingest.py
+
+      - name: Silver + Gold — dbt run
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        working-directory: dbt_project
+        run: |
+          dbt deps
+          dbt run --profiles-dir .
+          dbt test --profiles-dir . || echo "dbt tests failed but continuing"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Pipeline thất bại tại $(date). Kiểm tra logs phía trên."

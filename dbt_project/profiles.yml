@@ -1,0 +1,8 @@
+energy_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "md:energy_lakehouse?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      schema: main
+      threads: 4

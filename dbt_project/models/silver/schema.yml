@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: silver_households
+    description: >
+      Cleaned, deduplicated, type-cast household records derived from bronze.households.
+      One row per household_id within the valid 2018-2025 / household_size 1-20 /
+      income_quintile 1-5 ranges.
+    columns:
+      - name: household_id
+        description: Natural key of a household. Unique after deduplication.
+        tests:
+          - not_null
+          - unique
+      - name: country
+        tests:
+          - not_null
+      - name: year
+        description: Survey year, constrained to 2018-2025 in the cleaning step.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+      - name: is_urban
+        tests:
+          - not_null
+      - name: household_size
+        tests:
+          - not_null
+      - name: income_quintile
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+      - name: has_electricity_access
+        tests:
+          - not_null
+      - name: monthly_electricity_kwh
+        description: Monthly electricity consumption in kWh; 0 for unelectrified households.
+        tests:
+          - not_null
+      - name: barrier_count
+        description: Number of access barriers (0 = none).
+        tests:
+          - not_null

@@ -1,0 +1,93 @@
+version: 2
+
+models:
+  - name: gold_dim_geography
+    description: Kimball geography dimension; one row per (country, region, is_urban, settlement_type).
+    columns:
+      - name: geography_key
+        description: Surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: country
+        tests:
+          - not_null
+      - name: settlement_group
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['urban', 'peri_urban', 'rural', 'other']
+
+  - name: gold_dim_household
+    description: Kimball household dimension; one row per household.
+    columns:
+      - name: household_key
+        description: Surrogate key (= household_id).
+        tests:
+          - not_null
+          - unique
+      - name: income_group
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['very_low', 'low', 'middle', 'high', 'very_high']
+      - name: energy_source_category
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['grid', 'off_grid', 'none']
+
+  - name: gold_fact_consumption
+    description: Central fact table; one row per household-year electricity-consumption observation.
+    columns:
+      - name: household_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_dim_household')
+                field: household_key
+      - name: geography_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_dim_geography')
+                field: geography_key
+      - name: year
+        tests:
+          - not_null
+      - name: monthly_electricity_kwh
+        tests:
+          - not_null
+
+  - name: gold_agg_country_year
+    description: Pre-aggregated metrics by country x year x scenario x is_urban for the dashboard.
+    columns:
+      - name: country
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: n_households
+        tests:
+          - not_null
+      - name: access_rate_pct
+        tests:
+          - not_null
+
+  - name: gold_ml_features
+    description: >
+      Wide, flat feature table for ML regression. Restricted to electrified households
+      with monthly_electricity_kwh > 0.
+    columns:
+      - name: household_id
+        tests:
+          - not_null
+          - unique
+      - name: target_kwh
+        description: Regression target (monthly_electricity_kwh, always > 0 here).
+        tests:
+          - not_null
