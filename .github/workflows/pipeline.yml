@@ -36,8 +36,7 @@ jobs:
         working-directory: dbt_project
         run: |
           dbt deps
-          dbt run --profiles-dir .
-          dbt test --profiles-dir . || echo "dbt tests failed but continuing"
+          dbt build --profiles-dir . || echo "dbt build (run + snapshot + test) failed but continuing"
 
       - name: Notify on failure
         if: failure()

@@ -19,14 +19,46 @@ models:
               arguments:
                 values: ['urban', 'peri_urban', 'rural', 'other']
 
-  - name: gold_dim_household
-    description: Kimball household dimension; one row per household.
+  - name: gold_dim_date
+    description: Kimball calendar dimension at year grain; one row per survey year (2018-2025).
     columns:
-      - name: household_key
-        description: Surrogate key (= household_id).
+      - name: date_key
+        description: Surrogate key.
         tests:
           - not_null
           - unique
+      - name: year
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+      - name: sdg7_period
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['baseline', 'recent']
+
+  - name: gold_dim_household
+    description: >
+      Kimball household dimension with Slowly Changing Dimension (SCD) Type 2 history,
+      sourced from the household_snapshot. One row per household version; the current
+      version has is_current = true and valid_to is null.
+    columns:
+      - name: household_sk
+        description: Surrogate key; unique per household version.
+        tests:
+          - not_null
+          - unique
+      - name: household_key
+        description: Natural/business key (= household_id); not unique under SCD2.
+        tests:
+          - not_null
+      - name: is_current
+        tests:
+          - not_null
       - name: income_group
         tests:
           - accepted_values:
@@ -55,6 +87,13 @@ models:
               arguments:
                 to: ref('gold_dim_geography')
                 field: geography_key
+      - name: date_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_dim_date')
+                field: date_key
       - name: year
         tests:
           - not_null
