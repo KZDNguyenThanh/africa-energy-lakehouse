@@ -1,0 +1,55 @@
+# Secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# dbt
+dbt_project/target/
+dbt_project/logs/
+dbt_project/dbt_packages/
+dbt_project/.user.yml
+
+# ML artifacts
+ml/lgbm_kwh_model.pkl
+ml/*.pkl
+ml/*.joblib
+
+# Generated ML outputs (figures, metrics, training logs)
+ml/*.png
+ml/model_comparison.csv
+catboost_info/
+
+# Report deliverables & internal evaluation docs (not committed)
+report/
+EVALUATION.md
+ml/ML_EVALUATION.md
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# DuckDB local
+*.duckdb
+*.duckdb.wal
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

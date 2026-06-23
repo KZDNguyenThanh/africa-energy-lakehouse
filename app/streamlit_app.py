@@ -19,8 +19,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-MD_TOKEN   = os.environ.get("MOTHERDUCK_TOKEN", "")
-GROQ_KEY   = os.environ.get("GROQ_API_KEY", "")
+def _secret(name: str) -> str:
+    val = os.environ.get(name, "")
+    if val:
+        return val
+    try:
+        return st.secrets[name]
+    except Exception:
+        return ""
+
+
+MD_TOKEN   = _secret("MOTHERDUCK_TOKEN")
+GROQ_KEY   = _secret("GROQ_API_KEY")
 DB_NAME    = "energy_lakehouse"
 
 # ─── Data loading ─────────────────────────────────────────────────────────────
