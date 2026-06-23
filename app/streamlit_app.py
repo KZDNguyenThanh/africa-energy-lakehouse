@@ -132,7 +132,7 @@ with tab1:
         fig = px.line(pivot, x="year", y="avg_kwh_electrified", color="country",
                       markers=True, labels={"avg_kwh_electrified": "kWh/tháng", "year": "Năm"})
         fig.update_layout(legend_title="Quốc gia", height=350)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
     with c2:
         st.subheader("Phân phối kWh theo quốc gia")
@@ -148,10 +148,9 @@ with tab1:
             [*country_choice, selected_years[0], selected_years[1]],
         )
         fig2 = px.box(raw, x="country", y="monthly_electricity_kwh",
-                      color="country", labels={"monthly_electricity_kwh": "kWh/tháng"},
-                      showlegend=False)
-        fig2.update_layout(height=350)
-        st.plotly_chart(fig2, use_container_width=True)
+                      color="country", labels={"monthly_electricity_kwh": "kWh/tháng"})
+        fig2.update_layout(height=350, showlegend=False)
+        st.plotly_chart(fig2, width='stretch')
 
     st.subheader("Số giờ điện khả dụng TB / ngày")
     hrs = agg_df.groupby("country")["avg_hours_available"].mean().sort_values(ascending=True).reset_index()
@@ -159,7 +158,7 @@ with tab1:
                   labels={"avg_hours_available": "Giờ/ngày", "country": ""},
                   color="avg_hours_available", color_continuous_scale="Blues")
     fig3.update_layout(height=350, coloraxis_showscale=False)
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width='stretch')
 
 # ── Tab 2: Tiếp cận điện ──────────────────────────────────────────────────────
 with tab2:
@@ -172,7 +171,7 @@ with tab2:
                       color="access_rate_pct", color_continuous_scale="Greens",
                       labels={"access_rate_pct": "Tỷ lệ (%)", "country": ""})
         fig4.update_layout(height=350, coloraxis_showscale=False)
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width='stretch')
 
     with c2:
         st.subheader("Tỷ lệ tiếp cận điện theo năm")
@@ -180,7 +179,7 @@ with tab2:
         fig5 = px.line(acc_yr, x="year", y="access_rate_pct", color="country",
                        markers=True, labels={"access_rate_pct": "Tỷ lệ (%)", "year": "Năm"})
         fig5.update_layout(height=350, legend_title="Quốc gia")
-        st.plotly_chart(fig5, use_container_width=True)
+        st.plotly_chart(fig5, width='stretch')
 
     st.subheader("Điểm thiết bị điện trung bình (0–6)")
     app = agg_df.groupby(["country", "is_urban"])["avg_appliance_score"].mean().reset_index()
@@ -188,7 +187,7 @@ with tab2:
     fig6 = px.bar(app, x="country", y="avg_appliance_score", color="khu_vuc",
                   barmode="group", labels={"avg_appliance_score": "Điểm TB", "country": ""})
     fig6.update_layout(height=320, legend_title="Khu vực")
-    st.plotly_chart(fig6, use_container_width=True)
+    st.plotly_chart(fig6, width='stretch')
 
 # ── Tab 3: ML Predictions ─────────────────────────────────────────────────────
 with tab3:
@@ -227,7 +226,7 @@ with tab3:
                                           mode="lines", name="Perfect",
                                           line=dict(color="red", dash="dash")))
                 fig7.update_layout(height=380)
-                st.plotly_chart(fig7, use_container_width=True)
+                st.plotly_chart(fig7, width='stretch')
 
             with c2:
                 st.caption("Phân phối sai số dự đoán")
@@ -235,7 +234,7 @@ with tab3:
                                     labels={"error_kwh": "Sai số (kWh)"})
                 fig8.add_vline(x=0, line_dash="dash", line_color="red")
                 fig8.update_layout(height=380)
-                st.plotly_chart(fig8, use_container_width=True)
+                st.plotly_chart(fig8, width='stretch')
 
     except Exception as e:
         st.info(f"Bảng gold_predictions chưa tồn tại. Chạy notebook ML trước.\n\n`{e}`")
@@ -255,7 +254,7 @@ with tab4:
             avg_satisfaction=("avg_satisfaction", "mean")
         ).round(2)
 
-        st.dataframe(summary_data, use_container_width=True)
+        st.dataframe(summary_data, width='stretch')
 
         preset_questions = [
             "Phân tích top 3 quốc gia có mức tiêu thụ điện cao nhất và lý do",
