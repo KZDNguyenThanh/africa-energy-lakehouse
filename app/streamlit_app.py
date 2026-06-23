@@ -49,7 +49,7 @@ def check_token():
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.title("⚡ Bộ lọc")
+    st.title("Bộ lọc")
     check_token()
 
     agg = load("SELECT DISTINCT country, year, scenario, is_urban FROM gold.gold_agg_country_year ORDER BY country")
@@ -72,7 +72,7 @@ with st.sidebar:
     urban_filter = st.radio("Khu vực", ["Tất cả", "Đô thị", "Nông thôn"])
 
     st.divider()
-    st.caption("Dữ liệu: Africa Synth Energy — Hugging Face\nKiến trúc: Lakehouse Medallion (Bronze → Silver → Gold)")
+    st.caption("Dữ liệu: Africa Synth Energy — Hugging Face")
 
 # ─── Load data với filter (parameterized — tránh SQL injection) ───────────────
 country_choice = selected_countries or [""]
@@ -101,7 +101,7 @@ agg_df = load(
 )
 
 # ─── Header ───────────────────────────────────────────────────────────────────
-st.title("⚡ Hệ thống Lakehouse — Phân tích tiêu thụ điện năng hộ gia đình")
+st.title("Hệ thống Lakehouse — Phân tích tiêu thụ điện năng hộ gia đình")
 st.caption("Dự đoán mức tiêu thụ điện năng hộ gia đình khu vực Hạ Sahara | 12 quốc gia | 2018–2025")
 
 # ─── KPI metrics ──────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ with tab2:
 
 # ── Tab 3: ML Predictions ─────────────────────────────────────────────────────
 with tab3:
-    st.subheader("Kết quả dự đoán mức tiêu thụ điện (LightGBM Regression)")
+    st.subheader("Kết quả dự đoán mức tiêu thụ điện")
 
     try:
         pred_df = load("""
@@ -241,7 +241,7 @@ with tab3:
 
 # ── Tab 4: GenBI ──────────────────────────────────────────────────────────────
 with tab4:
-    st.subheader("Trợ lý phân tích AI (Groq — Llama 3)")
+    st.subheader("Trợ lý phân tích AI")
 
     if not GROQ_KEY:
         st.warning("GROQ_API_KEY chưa được set. Thêm vào .env hoặc Streamlit Secrets.")
