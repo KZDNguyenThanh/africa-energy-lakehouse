@@ -5,6 +5,7 @@ Hiển thị phân tích tiêu thụ điện từ Gold layer + serving dự đo�
 
 import os
 import duckdb
+import joblib
 import pandas as pd
 import streamlit as st
 import plotly.express as px
@@ -46,6 +47,41 @@ def check_token():
     if not MD_TOKEN:
         st.error("MOTHERDUCK_TOKEN chưa được set. Kiểm tra file .env hoặc Streamlit Secrets.")
         st.stop()
+
+# ─── ML model (cho phép người dùng tự nhập & dự đoán) ─────────────────────────
+ML_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ml")
+
+@st.cache_resource
+def load_model():
+    return joblib.load(os.path.join(ML_DIR, "best_model.pkl"))
+
+
+COUNTRIES = ["Ethiopia", "Ghana", "Kenya", "Malawi", "Mali", "Niger",
+             "Nigeria", "Rwanda", "Senegal", "Tanzania", "Uganda", "Zambia"]
+SETTLEMENT_TYPES = ["major_city", "secondary_city", "peri_urban",
+                    "rural_village", "dispersed_rural", "remote_rural"]
+URBAN_SETTLEMENTS = {"major_city", "secondary_city", "peri_urban"}
+EDUCATION_LEVELS = ["none", "primary", "secondary", "tertiary"]
+CONNECTION_TYPES = ["grid_direct", "grid_shared", "mini_grid", "off_grid_solar"]
+CONNECTION_QUALITIES = ["reliable", "good", "adequate", "intermittent", "limited", "poor"]
+COOKING_FUELS = ["firewood", "charcoal", "lpg", "electric", "biogas"]
+SCENARIOS = ["low_burden", "moderate_burden", "high_burden"]
+
+
+def build_feature_row(model, inputs: dict) -> pd.DataFrame:
+    is_urban = inputs["settlement_type"] in URBAN_SETTLEMENTS
+    region = f"{inputs['country']}_{'urban' if is_urban else 'rural'}_{inputs['settlement_type']}"
+    row = {
+        **inputs,
+        "is_urban": int(is_urban),
+        "region": region,
+        "barrier_count": 0,
+    }
+    for c in ["has_phone_charging", "has_radio", "has_tv", "has_fridge", "has_fan",
+              "has_electric_iron", "has_electric_kettle", "uses_multiple_sources",
+              "has_backup_source"]:
+        row[c] = int(row[c])
+    return pd.DataFrame([row])[model.feature_names_]
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -191,7 +227,86 @@ with tab2:
 
 # ── Tab 3: ML Predictions ─────────────────────────────────────────────────────
 with tab3:
-    st.subheader("Kết quả dự đoán mức tiêu thụ điện")
+    st.subheader("Dự đoán tiêu thụ điện cho một hộ gia đình")
+    st.caption("Nhập thông tin hộ gia đình rồi bấm **Dự đoán** để mô hình ước tính mức tiêu thụ (kWh/tháng).")
+
+    try:
+        model = load_model()
+    except Exception as e:
+        model = None
+        st.warning(f"Không tải được mô hình (`ml/best_model.pkl`). Chạy `python ml/run_train.py` trước.\n\n`{e}`")
+
+    if model is not None:
+        with st.form("predict_form"):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown("**Vị trí & hộ gia đình**")
+                country = st.selectbox("Quốc gia", COUNTRIES, index=2)
+                settlement_type = st.selectbox("Loại khu dân cư", SETTLEMENT_TYPES)
+                household_size = st.number_input("Số thành viên", 1, 13, 5)
+                income_quintile = st.select_slider("Nhóm thu nhập (1 thấp – 5 cao)", [1, 2, 3, 4, 5], 4)
+                education_head = st.selectbox("Học vấn chủ hộ", EDUCATION_LEVELS, index=2)
+                year = st.slider("Năm", 2018, 2025, 2025)
+                scenario = st.selectbox("Kịch bản chi phí", SCENARIOS, index=1)
+            with c2:
+                st.markdown("**Kết nối điện**")
+                connection_type = st.selectbox("Loại kết nối", CONNECTION_TYPES)
+                connection_quality = st.selectbox("Chất lượng kết nối", CONNECTION_QUALITIES)
+                years_connected = st.number_input("Số năm đã có điện", 0, 15, 6)
+                hours_electricity_available = st.slider("Giờ có điện/ngày", 0.0, 24.0, 12.0, 0.5)
+                distance_to_grid_km = st.number_input("Khoảng cách tới lưới (km)", 0.0, 104.0, 2.0, 0.5)
+                primary_cooking_fuel = st.selectbox("Nhiên liệu nấu ăn chính", COOKING_FUELS)
+                uses_multiple_sources = st.checkbox("Dùng nhiều nguồn điện")
+                has_backup_source = st.checkbox("Có nguồn dự phòng")
+            with c3:
+                st.markdown("**Thiết bị điện**")
+                appliance_count = st.number_input("Tổng số thiết bị điện", 0, 12, 4)
+                satisfaction_score = st.slider("Mức hài lòng (1–10)", 1, 10, 6)
+                willingness_to_pay_monthly_usd = st.number_input(
+                    "Sẵn lòng chi trả (USD/tháng)", 10.0, 80.0, 45.0, 1.0)
+                has_phone_charging = st.checkbox("Sạc điện thoại", value=True)
+                has_radio = st.checkbox("Radio", value=True)
+                has_tv = st.checkbox("TV", value=True)
+                has_fridge = st.checkbox("Tủ lạnh")
+                has_fan = st.checkbox("Quạt", value=True)
+                has_electric_iron = st.checkbox("Bàn ủi điện")
+                has_electric_kettle = st.checkbox("Ấm đun điện")
+
+            submitted = st.form_submit_button("Dự đoán", type="primary")
+
+        if submitted:
+            inputs = {
+                "country": country, "settlement_type": settlement_type,
+                "household_size": household_size, "income_quintile": income_quintile,
+                "education_head": education_head, "connection_type": connection_type,
+                "connection_quality": connection_quality, "years_connected": years_connected,
+                "hours_electricity_available": hours_electricity_available,
+                "distance_to_grid_km": distance_to_grid_km, "appliance_count": appliance_count,
+                "has_phone_charging": has_phone_charging, "has_radio": has_radio,
+                "has_tv": has_tv, "has_fridge": has_fridge, "has_fan": has_fan,
+                "has_electric_iron": has_electric_iron, "has_electric_kettle": has_electric_kettle,
+                "satisfaction_score": satisfaction_score,
+                "willingness_to_pay_monthly_usd": willingness_to_pay_monthly_usd,
+                "primary_cooking_fuel": primary_cooking_fuel,
+                "uses_multiple_sources": uses_multiple_sources,
+                "has_backup_source": has_backup_source, "scenario": scenario, "year": year,
+            }
+            try:
+                X_in = build_feature_row(model, inputs)
+                pred_kwh = float(model.predict(X_in)[0])
+                ref = agg_df["avg_kwh_electrified"].mean() if not agg_df.empty else None
+                r1, r2 = st.columns([1, 2])
+                r1.metric("Dự đoán tiêu thụ", f"{pred_kwh:.1f} kWh/tháng",
+                          delta=(f"{pred_kwh - ref:+.1f} so với TB" if ref else None))
+                with r2:
+                    if ref:
+                        st.caption(f"Mức trung bình theo bộ lọc hiện tại: {ref:.1f} kWh/tháng")
+                    st.success("Đã dự đoán xong. Điều chỉnh thông số phía trên để thử kịch bản khác.")
+            except Exception as e:
+                st.error(f"Lỗi khi dự đoán: {e}")
+
+    st.divider()
+    st.subheader("Kết quả dự đoán trên tập kiểm thử")
 
     try:
         pred_df = load("""
