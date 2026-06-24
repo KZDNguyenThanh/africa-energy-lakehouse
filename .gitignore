@@ -24,6 +24,8 @@ dbt_project/.user.yml
 ml/lgbm_kwh_model.pkl
 ml/*.pkl
 ml/*.joblib
+# nhưng vẫn commit model phục vụ cho Streamlit app
+!ml/best_model.pkl
 
 # Generated ML outputs (figures, metrics, training logs)
 ml/*.png
